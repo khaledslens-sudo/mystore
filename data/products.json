@@ -1,0 +1,29 @@
+[
+  {
+    "id": "jt6ujnp",
+    "name": "منتج",
+    "price": 1500,
+    "category": "عام",
+    "stock": 10,
+    "description": "تجربة",
+    "image": ""
+  },
+  {
+    "id": "cvn66t3",
+    "name": "متحكم في الحرارة ",
+    "price": 600,
+    "category": "الكتورنيات",
+    "stock": 100,
+    "description": "",
+    "image": "/uploads/1782984330117.jpg"
+  },
+  {
+    "id": "4slffvx",
+    "name": "منتج تجريبي",
+    "price": 2500,
+    "category": "عام",
+    "stock": 15,
+    "description": "منتج للتجربة",
+    "image": ""
+  }
+]

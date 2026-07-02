@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang=ar dir=rtl>
+<head><meta charset=UTF-8>
+<meta name=viewport content=width=device-width,initial-scale=1>
+<title>لوحة التحكم</title>
+<link rel=stylesheet href=style.css>
+</head>
+<body>
+<header class=topbar>
+<div class=brand>لوحة التحكم</div>
+<a href=/ style=color:#ff6b35>المتجر</a>
+</header>
+<div style=padding:16px>
+<h2 style=margin-bottom:16px>اضافة منتج جديد</h2>
+<div class=panel>
+<div class=form-group><label>اسم المنتج</label><input id=pname placeholder=اسم المنتج></div>
+<div class=form-group><label>السعر (دج)</label><input type=number id=pprice placeholder=1500></div>
+<div class=form-group><label>الكمية</label><input type=number id=pstock placeholder=10></div>
+<div class=form-group><label>الفئة</label><input id=pcat placeholder=ملابس></div>
+<div class=form-group><label>الوصف</label><textarea id=pdesc rows=2 placeholder=وصف المنتج></textarea></div>
+<div class=form-group><label>صورة المنتج</label><input type=file id=pimg accept=image/*></div>
+<button class=submit-btn onclick=saveProduct()>اضافة المنتج</button>
+</div>
+<h2 style=margin:20px 0 12px>المنتجات الحالية</h2>
+<div id=productsList></div>
+<h2 style=margin:20px 0 12px>الطلبات</h2>
+<div id=ordersList></div>
+</div>
+<script>
+async function loadProducts(){
+  const r=await fetch('/api/products');
+  const products=await r.json();
+  document.getElementById('productsList').innerHTML=products.length==0?'<p style=color:#8a8d93>لا توجد منتجات بعد</p>':products.map(p=>'<div class=panel style=margin-bottom:10px><b>'+p.name+'</b> — '+p.price+' دج — كمية: '+p.stock+'<br><button onclick=deleteProduct(\''+p.id+'\') style=background:#ff4d4d;color:#000;border:none;padding:4px 10px;border-radius:4px;margin-top:8px;cursor:pointer>حذف</button></div>').join('');
+}
+async function loadOrders(){
+  const r=await fetch('/api/orders');
+  const orders=await r.json();
+  document.getElementById('ordersList').innerHTML=orders.length==0?'<p style=color:#8a8d93>لا توجد طلبات بعد</p>':orders.map(o=>'<div class=panel style=margin-bottom:10px><b>'+o.customer.name+'</b> — '+o.customer.wilaya+' — '+o.total+' دج<br>طريقة الدفع: '+o.paymentMethod+' — الحالة: '+o.status+'</div>').join('');
+}
+async function saveProduct(){
+  const fd=new FormData();
+  fd.append('name',document.getElementById('pname').value);
+  fd.append('price',document.getElementById('pprice').value);
+  fd.append('stock',document.getElementById('pstock').value);
+  fd.append('category',document.getElementById('pcat').value);
+  fd.append('description',document.getElementById('pdesc').value);
+  const img=document.getElementById('pimg').files[0];
+  if(img) fd.append('image',img);
+  const r=await fetch('/api/products',{method:'POST',body:fd});
+  if(r.ok){alert('تم اضافة المنتج!');loadProducts();}
+  else alert('حدث خطأ');
+}
+async function deleteProduct(id){
+  if(!confirm('متأكد من الحذف؟')) return;
+  await fetch('/api/products/'+id,{method:'DELETE'});
+  loadProducts();
+}
+loadProducts();
+loadOrders();
+</script>
+</body></html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang=ar dir=rtl>
+<head><meta charset=UTF-8>
+<meta name=viewport content=width=device-width,initial-scale=1>
+<title>متجري</title>
+<link rel=stylesheet href=style.css>
+</head>
+<body>
+<header class=topbar>
+<div class=brand id=storeName>متجري</div>
+<button class=cart-btn id=openCart>السلة <span class=cart-count id=cartCount>0</span></button>
+</header>
+<div class=grid id=grid></div>
+<div class=overlay id=overlay></div>
+<aside class=drawer id=drawer>
+<div class=drawer-head><h2>السلة</h2><button class=close-btn id=closeCart>x</button></div>
+<div class=drawer-body id=drawerBody><div class=empty>السلة فارغة</div></div>
+<div class=drawer-foot id=drawerFoot style=display:none>
+<div class=total-row><span>الإجمالي</span><span class=total-amt id=totalAmt>0</span></div>
+<div class=form-group><label>الاسم الكامل</label><input id=cName placeholder=محمد بن علي></div>
+<div class=form-group><label>الهاتف</label><input id=cPhone placeholder=06XXXXXXXX></div>
+<div class=form-group><label>الولاية</label><select id=cWilaya><option value=>اختر الولاية</option></select></div>
+<div class=form-group><label>العنوان</label><textarea id=cAddr rows=2 placeholder=البلدية والحي></textarea></div>
+<div class=pay-tabs>
+<button class="pay-tab active" data-m=baridimob>بريدي موب</button>
+<button class=pay-tab data-m=redotpay>Redot Pay</button>
+<button class=pay-tab data-m=paypal>PayPal</button>
+</div>
+<div class="pay-panel active" id=panel-baridimob>
+<div class=pay-info>حوّل المبلغ على RIP بريدي موب:<div class=rip>00799999004382272026</div>بعدها ارفع صورة الإيصال:</div>
+<input type=file id=receiptBaridi accept=image/*>
+<button class=confirm-btn id=btnBaridi>تأكيد الطلب</button>
+</div>
+<div class=pay-panel id=panel-redotpay style=display:none>
+<div class=pay-info>حوّل المبلغ على Redot Pay ID:<div class=rip>1737398288</div>بعدها ارفع صورة الإيصال:</div>
+<input type=file id=receiptRedot accept=image/*>
+<button class=confirm-btn id=btnRedot>تأكيد الطلب</button>
+</div>
+<div class=pay-panel id=panel-paypal style=display:none>
+<div class=pay-info>سيتم تفعيل PayPal بعد نشر المتجر على الإنترنت</div>
+</div>
+</div>
+</aside>
+<script src=app.js></script>
+</body></html>
