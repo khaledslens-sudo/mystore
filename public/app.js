@@ -6,7 +6,7 @@ async function load(){
     PRODUCTS=await r.json();
     const g=document.getElementById('grid');
     if(PRODUCTS.length===0){g.innerHTML='<p style=color:#8a8d93;padding:20px>لا توجد منتجات بعد</p>';return;}
-    g.innerHTML=PRODUCTS.map(p=>`<div class=card><div class=no-img style=${p.image?`background:url('${p.image}') center/cover`:''}>${p.image?'':🛍️</div><div class=body><h3>${p.name}</h3><p>${p.description||''}</p><div class=row><span class=price>${p.price} دج</span><button class=add-btn onclick="add('${p.id}')">اضف للسلة</button></div></div></div>`).join('');
+    g.innerHTML=PRODUCTS.map(p=>`<div class=card><div class=no-img style=${p.image?`background:url('${p.image}') center/cover`:''}>${p.image?'':'🛍️'}</div><div class=body><h3>${p.name}</h3><p>${p.description||''}</p><div class=row><span class=price>${p.price} دج</span><button class=add-btn onclick="add('${p.id}')">أضف للسلة</button></div></div></div>`).join('');
   }catch(e){console.error(e);}
 }
 function add(id){
