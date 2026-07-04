@@ -6,6 +6,17 @@ async function load(){
     PRODUCTS=await r.json();
     const g=document.getElementById('grid');
 let activeCat='all';
+function renderCatTabs(){
+  const cats=[...new Set(PRODUCTS.map(p=>p.category).filter(Boolean))];
+  const tabs=document.getElementById('catTabs');
+  tabs.innerHTML='<button class="cat-tab active" data-cat="all">الكل</button>'+cats.map(c=>`<button class="cat-tab" data-cat="${c}">${c}</button>`).join('');
+  tabs.querySelectorAll('.cat-tab').forEach(t=>t.addEventListener('click',()=>{
+    tabs.querySelectorAll('.cat-tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    activeCat=t.dataset.cat;
+    load();
+  }));
+}
     if(PRODUCTS.length===0){g.innerHTML='<p style=color:#8a8d93;padding:20px>لا توجد منتجات بعد</p>';return;}
     const list=activeCat==='all'?PRODUCTS:PRODUCTS.filter(p=>p.category===activeCat);
 g.innerHTML=list.map(p=>`<div class=card><div class=no-img>${p.image?`<img src="${p.image}">`:'🛍️'}</div><div class=body><h3>${p.name}</h3><p>${p.description||''}</p><div class=row><span class=price>${p.price} دج</span><button class=add-btn onclick="add('${p.id}')">أضف للسلة</button></div></div></div>`).join('');
@@ -73,5 +84,5 @@ document.getElementById('btnRedot').addEventListener('click',()=>{
   submitOrder('redotpay',f);
 });
 load();
+renderCatTabs();
 
-document.querySelectorAll('.cat-tab').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('.cat-tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');activeCat=t.dataset.cat;load();}));
