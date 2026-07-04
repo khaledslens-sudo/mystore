@@ -35,7 +35,7 @@ async function loadProducts(){
 async function loadOrders(){
   const r=await fetch('/api/orders');
   const orders=await r.json();
-  document.getElementById('ordersList').innerHTML=orders.length==0?'<p style=color:#8a8d93>لا توجد طلبات بعد</p>':orders.map(o=>'<div class=panel style=margin-bottom:10px><b>'+o.customer.name+'</b> — '+o.customer.wilaya+' — '+o.total+' دج<br>طريقة الدفع: '+o.paymentMethod+' — الحالة: '+o.status+'</div>').join('');
+  document.getElementById('ordersList').innerHTML=orders.length==0?'<p style=color:#8a8d93>لا توجد طلبات بعد</p>':orders.map(o=>'<div class=panel style=margin-bottom:10px><b>'+o.customer.name+'</b> — '+o.customer.phone+' — '+o.customer.wilaya+' — '+o.customer.address+' — '+o.total+' دج<br>طريقة الدفع: '+o.paymentMethod+' — الحالة: '+o.status+(o.receipt?'<br><a href="'+o.receipt+'" target="_blank">عرض صورة الريسي</a>':'')+'</div>').join('');
 }
 async function saveProduct(){
   const fd=new FormData();
