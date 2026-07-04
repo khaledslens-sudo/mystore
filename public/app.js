@@ -5,8 +5,10 @@ async function load(){
     const r=await fetch('/api/products');
     PRODUCTS=await r.json();
     const g=document.getElementById('grid');
+let activeCat='all';
     if(PRODUCTS.length===0){g.innerHTML='<p style=color:#8a8d93;padding:20px>لا توجد منتجات بعد</p>';return;}
-    g.innerHTML=PRODUCTS.map(p=>`<div class=card><div class=no-img>${p.image?`<img src="${p.image}">`:'🛍️'}</div><div class=body><h3>${p.name}</h3><p>${p.description||''}</p><div class=row><span class=price>${p.price} دج</span><button class=add-btn onclick="add('${p.id}')">أضف للسلة</button></div></div></div>`).join('');
+    const list=activeCat==='all'?PRODUCTS:PRODUCTS.filter(p=>p.category===activeCat);
+g.innerHTML=list.map(p=>`<div class=card><div class=no-img>${p.image?`<img src="${p.image}">`:'🛍️'}</div><div class=body><h3>${p.name}</h3><p>${p.description||''}</p><div class=row><span class=price>${p.price} دج</span><button class=add-btn onclick="add('${p.id}')">أضف للسلة</button></div></div></div>`).join('');
   }catch(e){console.error(e);}
 }
 function add(id){
@@ -71,3 +73,5 @@ document.getElementById('btnRedot').addEventListener('click',()=>{
   submitOrder('redotpay',f);
 });
 load();
+
+document.querySelectorAll('.cat-tab').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('.cat-tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');activeCat=t.dataset.cat;load();}));

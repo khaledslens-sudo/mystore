@@ -51,3 +51,7 @@ body{font-family:'Tajawal',Arial,sans-serif;background:#0a0a0a;color:#f0f0f0;dir
 .confirm-btn:hover{transform:scale(1.02)}
 .panel{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;padding:16px;margin-bottom:12px}
 .submit-btn{background:linear-gradient(135deg,#d4af37,#b8860b);color:#fff;border:none;padding:10px 20px;border-radius:25px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px}
+
+.cat-tabs{display:flex;gap:8px;padding:12px 16px;overflow-x:auto}
+.cat-tab{background:#1a1a2e;color:#8a8d93;border:1px solid #2a2a4a;padding:8px 16px;border-radius:20px;white-space:nowrap;font-weight:600;cursor:pointer}
+.cat-tab.active{background:linear-gradient(135deg,#d4af37,#b8860b);color:#fff;border:none}
