@@ -16,6 +16,7 @@ async function load(){
   try{
     const r=await fetch('/api/products');
     PRODUCTS=await r.json();
+    renderCatTabs();
     const g=document.getElementById('grid');
     if(PRODUCTS.length===0){g.innerHTML='<p style=color:#8a8d93;padding:20px>لا توجد منتجات بعد</p>';return;}
     const list=activeCat==='all'?PRODUCTS:PRODUCTS.filter(p=>p.category===activeCat);
@@ -84,5 +85,4 @@ document.getElementById('btnRedot').addEventListener('click',()=>{
   submitOrder('redotpay',f);
 });
 load();
-renderCatTabs();
 
