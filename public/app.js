@@ -1,10 +1,5 @@
 
 let PRODUCTS=[], CART=[];
-async function load(){
-  try{
-    const r=await fetch('/api/products');
-    PRODUCTS=await r.json();
-    const g=document.getElementById('grid');
 let activeCat='all';
 function renderCatTabs(){
   const cats=[...new Set(PRODUCTS.map(p=>p.category).filter(Boolean))];
@@ -17,6 +12,11 @@ function renderCatTabs(){
     load();
   }));
 }
+async function load(){
+  try{
+    const r=await fetch('/api/products');
+    PRODUCTS=await r.json();
+    const g=document.getElementById('grid');
     if(PRODUCTS.length===0){g.innerHTML='<p style=color:#8a8d93;padding:20px>لا توجد منتجات بعد</p>';return;}
     const list=activeCat==='all'?PRODUCTS:PRODUCTS.filter(p=>p.category===activeCat);
 g.innerHTML=list.map(p=>`<div class=card><div class=no-img>${p.image?`<img src="${p.image}">`:'🛍️'}</div><div class=body><h3>${p.name}</h3><p>${p.description||''}</p><div class=row><span class=price>${p.price} دج</span><button class=add-btn onclick="add('${p.id}')">أضف للسلة</button></div></div></div>`).join('');
