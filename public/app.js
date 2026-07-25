@@ -20,14 +20,18 @@ async function load(){
     const g=document.getElementById('grid');
     if(PRODUCTS.length===0){g.innerHTML='<p style=color:#8a8d93;padding:20px>لا توجد منتجات بعد</p>';return;}
     const list=activeCat==='all'?PRODUCTS:PRODUCTS.filter(p=>p.category===activeCat);
-g.innerHTML=list.map(p=>`<div class=card><div class=no-img>${p.image?`<img src="${p.image}">`:'🛍️'}</div><div class=body><h3>${p.name}</h3><p>${p.description||''}</p><div class=row><span class=price>${p.price} دج</span><button class=add-btn onclick="add('${p.id}')">أضف للسلة</button></div></div></div>`).join('');
+g.innerHTML=list.map(p=>`<div class=card><div class=no-img>${p.image?`<img src="${p.image}">`:'🛍️'}</div><div class=body><h3>${p.name}</h3><p>${p.description||''}</p>${p.sizes?`<select id="size-${p.id}" class=opt-select><option value="">المقاس</option>${p.sizes.split(',').map(s=>`<option value="${s}">${s}</option>`).join('')}</select>`:''}${p.colors?`<select id="color-${p.id}" class=opt-select><option value="">اللون</option>${p.colors.split(',').map(c=>`<option value="${c}">${c}</option>`).join('')}</select>`:''}${p.deliveryTime?`<p class=delivery>🚚 التوصيل: ${p.deliveryTime}</p>`:''}<div class=row><span class=price>${p.price} دج</span><button class=add-btn onclick="add('${p.id}')">أضف للسلة</button></div></div></div>`).join('');
   }catch(e){console.error(e);}
 }
 function add(id){
   const p=PRODUCTS.find(x=>x.id===id);
   if(!p)return;
-  const e=CART.find(x=>x.id===id);
-  if(e)e.qty++;else CART.push({...p,qty:1});
+  let size='',color='';
+  if(p.sizes){size=document.getElementById('size-'+id).value;if(!size){alert('اختر المقاس أولاً');return;}}
+  if(p.colors){color=document.getElementById('color-'+id).value;if(!color){alert('اختر اللون أولاً');return;}}
+  const key=id+'|'+size+'|'+color;
+  const e=CART.find(x=>x.key===key);
+  if(e)e.qty++;else CART.push({...p,key,size,color,qty:1});
   document.getElementById('cartCount').textContent=CART.reduce((s,i)=>s+i.qty,0);
   renderCart();openDrawer();
 }
@@ -37,12 +41,12 @@ function renderCart(){
   const foot=document.getElementById('drawerFoot');
   if(CART.length===0){body.innerHTML='<div class=empty>السلة فارغة</div>';foot.style.display='none';return;}
   foot.style.display='block';
-  body.innerHTML=CART.map(i=>`<div class=cart-item><div class=info><h4>${i.name}</h4><div class=qty-ctrl><button onclick="chqty('${i.id}',-1)">-</button><span>${i.qty}</span><button onclick="chqty('${i.id}',1)">+</button><span>${i.price*i.qty} دج</span></div></div></div>`).join('');
+  body.innerHTML=CART.map(i=>`<div class=cart-item><div class=info><h4>${i.name}${i.size?` - ${i.size}`:''}${i.color?` - ${i.color}`:''}</h4><div class=qty-ctrl><button onclick="chqty('${i.key}',-1)">-</button><span>${i.qty}</span><button onclick="chqty('${i.key}',1)">+</button><span>${i.price*i.qty} دج</span></div></div></div>`).join('');
   document.getElementById('totalAmt').textContent=getTotal()+' دج';
 }
-function chqty(id,d){
-  const i=CART.find(x=>x.id===id);if(!i)return;
-  i.qty+=d;if(i.qty<=0)CART=CART.filter(x=>x.id!==id);
+function chqty(key,d){
+  const i=CART.find(x=>x.key===key);if(!i)return;
+  i.qty+=d;if(i.qty<=0)CART=CART.filter(x=>x.key!==key);
   document.getElementById('cartCount').textContent=CART.reduce((s,i)=>s+i.qty,0);
   renderCart();
 }
@@ -67,7 +71,7 @@ async function submitOrder(method,receipt){
   const addr=document.getElementById('cAddr').value.trim();
   if(!name||!phone||!wilaya||!addr){alert('عبي جميع الحقول');return;}
   const fd=new FormData();
-  fd.append('items',JSON.stringify(CART.map(i=>({id:i.id,name:i.name,qty:i.qty,price:i.price}))));
+  fd.append('items',JSON.stringify(CART.map(i=>({id:i.id,name:i.name,qty:i.qty,price:i.price,size:i.size||'',color:i.color||''}))));
   fd.append('total',getTotal());
   fd.append('paymentMethod',method);
   fd.append('customer',JSON.stringify({name,phone,wilaya,address:addr}));
