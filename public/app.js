@@ -20,7 +20,7 @@ async function load(){
     const g=document.getElementById('grid');
     if(PRODUCTS.length===0){g.innerHTML='<p style=color:#8a8d93;padding:20px>لا توجد منتجات بعد</p>';return;}
     const list=activeCat==='all'?PRODUCTS:PRODUCTS.filter(p=>p.category===activeCat);
-g.innerHTML=list.map(p=>`<div class=card><div class=no-img>${p.image?`<img src="${p.image}">`:'🛍️'}</div><div class=body><h3>${p.name}</h3><p>${p.description||''}</p>${p.sizes?`<select id="size-${p.id}" class=opt-select><option value="">المقاس</option>${p.sizes.split(',').map(s=>`<option value="${s}">${s}</option>`).join('')}</select>`:''}${p.colors?`<select id="color-${p.id}" class=opt-select><option value="">اللون</option>${p.colors.split(',').map(c=>`<option value="${c}">${c}</option>`).join('')}</select>`:''}${p.deliveryTime?`<p class=delivery>🚚 التوصيل: ${p.deliveryTime}</p>`:''}<div class=row><span class=price>${p.price} دج</span><button class=add-btn onclick="add('${p.id}')">أضف للسلة</button></div></div></div>`).join('');
+g.innerHTML=list.map(p=>`<div class=card>${renderImgHTML(p)}<div class=no-img>${p.image?`<img src="${p.image}">`:'🛍️'}</div><div class=body><h3>${p.name}</h3><p>${p.description||''}</p>${p.sizes?`<select id="size-${p.id}" class=opt-select><option value="">المقاس</option>${p.sizes.split(',').map(s=>`<option value="${s}">${s}</option>`).join('')}</select>`:''}${p.colors?`<select id="color-${p.id}" class=opt-select><option value="">اللون</option>${p.colors.split(',').map(c=>`<option value="${c}">${c}</option>`).join('')}</select>`:''}${p.deliveryTime?`<p class=delivery>🚚 التوصيل: ${p.deliveryTime}</p>`:''}<div class=row><span class=price>${p.price} دج</span><button class=add-btn onclick="add('${p.id}')">أضف للسلة</button></div></div></div>`).join('');
   }catch(e){console.error(e);}
 }
 function add(id){
@@ -50,6 +50,22 @@ function chqty(key,d){
   document.getElementById('cartCount').textContent=CART.reduce((s,i)=>s+i.qty,0);
   renderCart();
 }
+function renderImgHTML(p){
+  if(p.images&&p.images.length>1){
+    return '<div class=gallery data-idx=0>'+p.images.map((im,gi)=>'<img src="'+im+'" style="display:'+(gi===0?'block':'none')+'">').join('')+'<button type=button class=gal-prev onclick="galNav(event,this,-1)">‹</button><button type=button class=gal-next onclick="galNav(event,this,1)">›</button></div>';
+  }
+  return '';
+}
+function galNav(e,btn,d){
+  e.stopPropagation();
+  const g=btn.parentElement;
+  const imgs=[...g.querySelectorAll('img')];
+  let idx=Number(g.dataset.idx);
+  imgs[idx].style.display='none';
+  idx=(idx+d+imgs.length)%imgs.length;
+  imgs[idx].style.display='block';
+  g.dataset.idx=idx;
+}
 function openDrawer(){document.getElementById('drawer').classList.add('open');document.getElementById('overlay').classList.add('open');}
 function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('overlay').classList.remove('open');}
 document.getElementById('openCart').addEventListener('click',openDrawer);
@@ -64,13 +80,18 @@ document.querySelectorAll('.pay-tab').forEach(t=>t.addEventListener('click',()=>
 const WILAYAS=['ادرار','الشلف','الاغواط','ام البواقي','باتنة','بجاية','بسكرة','بشار','البليدة','البويرة','تمنراست','تبسة','تلمسان','تيارت','تيزي وزو','الجزائر','الجلفة','جيجل','سطيف','سعيدة','سكيكدة','سيدي بلعباس','عنابة','قالمة','قسنطينة','المدية','مستغانم','المسيلة','معسكر','ورقلة','وهران','البيض','اليزي','برج بوعريريج','بومرداس','الطارف','تندوف','تيسمسيلت','الوادي','خنشلة','سوق اهراس','تيبازة','ميلة','عين الدفلى','النعامة','عين تموشنت','غرداية','غليزان'];
 const sel=document.getElementById('cWilaya');
 WILAYAS.forEach((w,i)=>{const o=document.createElement('option');o.value=w;o.textContent=(i+1)+' - '+w;sel.appendChild(o);});
+const cAddrEl=document.getElementById('cAddr');
+if(cAddrEl){const wrap=cAddrEl.closest('.form-group')||cAddrEl.parentElement;const refWrap=document.createElement('div');refWrap.className='form-group';refWrap.innerHTML='<label>رقم مرجع التحويل</label><input id="cRef" placeholder="رقم العملية من بريدي موب/Redot Pay">';wrap.after(refWrap);}
 async function submitOrder(method,receipt){
   const name=document.getElementById('cName').value.trim();
   const phone=document.getElementById('cPhone').value.trim();
   const wilaya=document.getElementById('cWilaya').value;
   const addr=document.getElementById('cAddr').value.trim();
   if(!name||!phone||!wilaya||!addr){alert('عبي جميع الحقول');return;}
+  const reference=document.getElementById('cRef')?document.getElementById('cRef').value.trim():'';
+  if(method!=='paypal' && !reference){alert('الرجاء إدخال رقم مرجع التحويل');return;}
   const fd=new FormData();
+  fd.append('reference',reference);
   fd.append('items',JSON.stringify(CART.map(i=>({id:i.id,name:i.name,qty:i.qty,price:i.price,size:i.size||'',color:i.color||''}))));
   fd.append('total',getTotal());
   fd.append('paymentMethod',method);

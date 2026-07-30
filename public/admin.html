@@ -18,7 +18,7 @@
 <div class=form-group><label>الكمية</label><input type=number id=pstock placeholder=10></div>
 <div class=form-group><label>الفئة</label><input id=pcat placeholder=ملابس></div><div class=form-group><label>المقاسات</label><div style="display:flex;gap:8px;flex-wrap:wrap"><label><input type=checkbox class=psize value=S> S</label><label><input type=checkbox class=psize value=M> M</label><label><input type=checkbox class=psize value=L> L</label><label><input type=checkbox class=psize value=XL> XL</label><label><input type=checkbox class=psize value=XXL> XXL</label></div></div><div class=form-group><label>الألوان (اختياري، افصل بفاصلة)</label><input id=pcolors placeholder="أحمر, أزرق, أسود"></div><div class=form-group><label>مدة التوصيل</label><input id=pdelivery placeholder="3-5 أيام"></div>
 <div class=form-group><label>الوصف</label><textarea id=pdesc rows=2 placeholder=وصف المنتج></textarea></div>
-<div class=form-group><label>صورة المنتج</label><input type=file id=pimg accept=image/*></div>
+<div class=form-group><label>صورة المنتج</label><input type=file id=pimg accept=image/* multiple></div>
 <button class=submit-btn onclick=saveProduct()>اضافة المنتج</button>
 </div>
 <h2 style=margin:20px 0 12px>المنتجات الحالية</h2>
@@ -35,7 +35,11 @@ async function loadProducts(){
 async function loadOrders(){
   const r=await fetch('/api/orders');
   const orders=await r.json();
-  document.getElementById('ordersList').innerHTML=orders.length==0?'<p style=color:#8a8d93>لا توجد طلبات بعد</p>':orders.map(o=>'<div class=panel style=margin-bottom:10px><b>'+o.customer.name+'</b> — '+o.customer.phone+' — '+o.customer.wilaya+' — '+o.customer.address+' — '+o.total+' دج<br>طريقة الدفع: '+o.paymentMethod+' — الحالة: '+o.status+(o.receipt?'<br><a href="'+o.receipt+'" target="_blank">عرض صورة الريسي</a>':'')+'</div>').join('');
+  document.getElementById('ordersList').innerHTML=orders.length==0?'<p style=color:#8a8d93>لا توجد طلبات بعد</p>':orders.map(o=>'<div class=panel style=margin-bottom:10px><b>'+o.customer.name+'</b> — '+o.customer.phone+' — '+o.customer.wilaya+' — '+o.customer.address+' — '+o.total+' دج<br>طريقة الدفع: '+o.paymentMethod+' — الحالة: '+o.status+(o.reference?'<br>رقم المرجع: '+o.reference:'')+(o.receipt?'<br><a href="'+o.receipt+'" target="_blank">عرض صورة الريسي</a>':'')+'<br><button onclick="setStatus(\''+o.id+'\',\'confirmed\')" style="background:#2ecc71;color:#000;border:none;padding:4px 10px;border-radius:4px;margin-top:6px;cursor:pointer">تأكيد الدفع</button> <button onclick="setStatus(\''+o.id+'\',\'rejected\')" style="background:#ff4d4d;color:#000;border:none;padding:4px 10px;border-radius:4px;margin-top:6px;cursor:pointer">رفض</button>'+'</div>').join('');
+}
+async function setStatus(id,status){
+  await fetch('/api/orders/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});
+  loadOrders();
 }
 async function saveProduct(){
   const fd=new FormData();
@@ -45,7 +49,7 @@ async function saveProduct(){
   fd.append('category',document.getElementById('pcat').value);
   fd.append('description',document.getElementById('pdesc').value);
   const sizes=[...document.querySelectorAll('.psize:checked')].map(c=>c.value).join(',');fd.append('sizes',sizes);fd.append('colors',document.getElementById('pcolors').value);fd.append('deliveryTime',document.getElementById('pdelivery').value);const img=document.getElementById('pimg').files[0];
-  if(img) fd.append('image',img);
+  const imgsAll=document.getElementById('pimg').files;for(let gi=0;gi<imgsAll.length;gi++) fd.append('images',imgsAll[gi]);
   const r=await fetch('/api/products',{method:'POST',body:fd});
   if(r.ok){alert('تم اضافة المنتج!');loadProducts();}
   else alert('حدث خطأ');

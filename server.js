@@ -28,19 +28,19 @@ if (!fs.existsSync('data/settings.json')) writeDB('data/settings.json', { curren
 
 app.get('/api/products', (req, res) => res.json(readDB('data/products.json')));
 
-app.post('/api/products', upload.single('image'), (req, res) => {
+app.post('/api/products', upload.array('images', 5), (req, res) => {
   const products = readDB('data/products.json');
-  const p = { id: genId(), name: req.body.name, price: Number(req.body.price), category: req.body.category || '', stock: Number(req.body.stock) || 0, description: req.body.description || '', image: req.file ? '/uploads/' + req.file.filename : '', sizes: req.body.sizes || '', colors: req.body.colors || '', deliveryTime: req.body.deliveryTime || '' };
+  const p = { id: genId(), name: req.body.name, price: Number(req.body.price), category: req.body.category || '', stock: Number(req.body.stock) || 0, description: req.body.description || '', image: req.files && req.files[0] ? '/uploads/' + req.files[0].filename : '', images: req.files ? req.files.map(f=>'/uploads/'+f.filename) : [], sizes: req.body.sizes || '', colors: req.body.colors || '', deliveryTime: req.body.deliveryTime || '' };
   products.push(p);
   writeDB('data/products.json', products);
   res.json(p);
 });
 
-app.put('/api/products/:id', upload.single('image'), (req, res) => {
+app.put('/api/products/:id', upload.array('images', 5), (req, res) => {
   const products = readDB('data/products.json');
   const i = products.findIndex(p => p.id === req.params.id);
   if (i === -1) return res.status(404).json({ error: 'غير موجود' });
-  products[i] = { ...products[i], name: req.body.name || products[i].name, price: Number(req.body.price) || products[i].price, category: req.body.category || products[i].category, stock: Number(req.body.stock) ?? products[i].stock, description: req.body.description || products[i].description, image: req.file ? '/uploads/' + req.file.filename : products[i].image, sizes: req.body.sizes !== undefined ? req.body.sizes : products[i].sizes, colors: req.body.colors !== undefined ? req.body.colors : products[i].colors, deliveryTime: req.body.deliveryTime !== undefined ? req.body.deliveryTime : products[i].deliveryTime };
+  products[i] = { ...products[i], name: req.body.name || products[i].name, price: Number(req.body.price) || products[i].price, category: req.body.category || products[i].category, stock: Number(req.body.stock) ?? products[i].stock, description: req.body.description || products[i].description, image: req.files && req.files[0] ? '/uploads/' + req.files[0].filename : products[i].image, images: req.files && req.files.length ? req.files.map(f=>'/uploads/'+f.filename) : products[i].images, sizes: req.body.sizes !== undefined ? req.body.sizes : products[i].sizes, colors: req.body.colors !== undefined ? req.body.colors : products[i].colors, deliveryTime: req.body.deliveryTime !== undefined ? req.body.deliveryTime : products[i].deliveryTime };
   writeDB('data/products.json', products);
   res.json(products[i]);
 });
@@ -52,9 +52,9 @@ app.delete('/api/products/:id', (req, res) => {
 });
 
 app.post('/api/orders', upload.single('receipt'), (req, res) => {
-  const { items, total, paymentMethod, customer } = req.body;
+  const { items, total, paymentMethod, customer, reference } = req.body;
   const orders = readDB('data/orders.json');
-  const order = { id: genId(), items: JSON.parse(items), total, paymentMethod, customer: JSON.parse(customer), receipt: req.file ? '/uploads/' + req.file.filename : null, status: paymentMethod === 'paypal' ? 'paid' : 'pending', createdAt: new Date().toISOString() };
+  const order = { id: genId(), items: JSON.parse(items), total, paymentMethod, customer: JSON.parse(customer), reference: reference || '', receipt: req.file ? '/uploads/' + req.file.filename : null, status: paymentMethod === 'paypal' ? 'paid' : 'pending', createdAt: new Date().toISOString() };
   orders.push(order);
   writeDB('data/orders.json', orders);
   res.json(order);
