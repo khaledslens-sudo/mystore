@@ -22,7 +22,7 @@
 <button class=submit-btn onclick=saveProduct()>اضافة المنتج</button>
 </div>
 <h2 style=margin:20px 0 12px>المنتجات الحالية</h2>
-<div id=productsList></div>
+<div class=panel><h3>إعدادات الطلبات</h3><div class=form-group><label>الحد الأقصى للطلبات في اليوم (0 = بلا حد)</label><input type=number id=maxOrders placeholder=0></div><button class=submit-btn onclick=saveSettings()>حفظ الإعدادات</button></div><div id=productsList></div>
 <h2 style=margin:20px 0 12px>الطلبات</h2>
 <div id=ordersList></div>
 </div>
@@ -35,10 +35,15 @@ async function loadProducts(){
 async function loadOrders(){
   const r=await fetch('/api/orders');
   const orders=await r.json();
-  document.getElementById('ordersList').innerHTML=orders.length==0?'<p style=color:#8a8d93>لا توجد طلبات بعد</p>':orders.map(o=>'<div class=panel style=margin-bottom:10px><b>'+o.customer.name+'</b> — '+o.customer.phone+' — '+o.customer.wilaya+' — '+o.customer.address+' — '+o.total+' دج<br>طريقة الدفع: '+o.paymentMethod+' — الحالة: '+o.status+(o.reference?'<br>رقم المرجع: '+o.reference:'')+(o.receipt?'<br><a href="'+o.receipt+'" target="_blank">عرض صورة الريسي</a>':'')+'<br><button onclick="setStatus(\''+o.id+'\',\'confirmed\')" style="background:#2ecc71;color:#000;border:none;padding:4px 10px;border-radius:4px;margin-top:6px;cursor:pointer">تأكيد الدفع</button> <button onclick="setStatus(\''+o.id+'\',\'rejected\')" style="background:#ff4d4d;color:#000;border:none;padding:4px 10px;border-radius:4px;margin-top:6px;cursor:pointer">رفض</button>'+'</div>').join('');
+  document.getElementById('ordersList').innerHTML=orders.length==0?'<p style=color:#8a8d93>لا توجد طلبات بعد</p>':orders.map(o=>'<div class=panel style=margin-bottom:10px><b>'+o.customer.name+'</b> — '+o.customer.phone+' — '+o.customer.wilaya+' — '+o.customer.address+' — '+o.total+' دج<br>طريقة الدفع: '+o.paymentMethod+' — الحالة: '+o.status+(o.reference?'<br>رقم المرجع: '+o.reference:'')+(o.receipt?'<br><a href="'+o.receipt+'" target="_blank">عرض صورة الريسي</a>':'')+'<br><button onclick="setStatus(\''+o.id+'\',\'confirmed\')" style="background:#2ecc71;color:#000;border:none;padding:4px 10px;border-radius:4px;margin-top:6px;cursor:pointer">تأكيد الدفع</button> <button onclick="setStatus(\''+o.id+'\',\'rejected\')" style="background:#ff4d4d;color:#000;border:none;padding:4px 10px;border-radius:4px;margin-top:6px;cursor:pointer">رفض</button> <button onclick="setStatus(\''+o.id+'\',\'done\')" style="background:#3498db;color:#fff;border:none;padding:4px 10px;border-radius:4px;margin-top:6px;cursor:pointer">تم ✅</button> <button onclick="deleteOrder(\''+o.id+'\')" style="background:#555;color:#fff;border:none;padding:4px 10px;border-radius:4px;margin-top:6px;cursor:pointer">حذف 🗑</button>'+'</div>').join('');
 }
 async function setStatus(id,status){
   await fetch('/api/orders/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});
+  loadOrders();
+}
+async function deleteOrder(id){
+  if(!confirm('متأكد من حذف الطلب؟')) return;
+  await fetch('/api/orders/'+id,{method:'DELETE'});
   loadOrders();
 }
 async function saveProduct(){
@@ -59,7 +64,18 @@ async function deleteProduct(id){
   await fetch('/api/products/'+id,{method:'DELETE'});
   loadProducts();
 }
+async function loadSettings(){
+  const r=await fetch('/api/settings');
+  const s=await r.json();
+  document.getElementById('maxOrders').value=s.maxOrdersPerDay||0;
+}
+async function saveSettings(){
+  const maxOrdersPerDay=Number(document.getElementById('maxOrders').value)||0;
+  await fetch('/api/settings',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({maxOrdersPerDay})});
+  alert('تم حفظ الإعدادات');
+}
 loadProducts();
 loadOrders();
+loadSettings();
 </script>
 </body></html>

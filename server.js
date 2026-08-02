@@ -51,9 +51,27 @@ app.delete('/api/products/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+app.get('/api/settings', (req, res) => res.json(readDB('data/settings.json')));
+app.put('/api/settings', (req, res) => {
+  const s = readDB('data/settings.json');
+  const updated = { ...s, ...req.body };
+  writeDB('data/settings.json', updated);
+  res.json(updated);
+});
+app.delete('/api/orders/:id', (req, res) => {
+  const orders = readDB('data/orders.json');
+  writeDB('data/orders.json', orders.filter(o => o.id !== req.params.id));
+  res.json({ ok: true });
+});
 app.post('/api/orders', upload.single('receipt'), (req, res) => {
   const { items, total, paymentMethod, customer, reference } = req.body;
   const orders = readDB('data/orders.json');
+  const settingsNow = readDB('data/settings.json');
+  const todayStr = new Date().toISOString().slice(0,10);
+  const todayCount = readDB('data/orders.json').filter(o => o.createdAt && o.createdAt.slice(0,10) === todayStr).length;
+  if (settingsNow.maxOrdersPerDay && todayCount >= settingsNow.maxOrdersPerDay) {
+    return res.status(403).json({ error: 'عذراً، وصلنا للحد الأقصى من الطلبات اليوم. حاول غداً.' });
+  }
   const order = { id: genId(), items: JSON.parse(items), total, paymentMethod, customer: JSON.parse(customer), reference: reference || '', receipt: req.file ? '/uploads/' + req.file.filename : null, status: paymentMethod === 'paypal' ? 'paid' : 'pending', createdAt: new Date().toISOString() };
   orders.push(order);
   writeDB('data/orders.json', orders);
