@@ -1,6 +1,7 @@
 
 let PRODUCTS=[], CART=[];
 let activeCat='all';
+let searchQuery='';
 function renderCatTabs(){
   const cats=[...new Set(PRODUCTS.map(p=>p.category).filter(Boolean))];
   const tabs=document.getElementById('catTabs');
@@ -19,7 +20,8 @@ async function load(){
     renderCatTabs();
     const g=document.getElementById('grid');
     if(PRODUCTS.length===0){g.innerHTML='<p style=color:#8a8d93;padding:20px>لا توجد منتجات بعد</p>';return;}
-    const list=activeCat==='all'?PRODUCTS:PRODUCTS.filter(p=>p.category===activeCat);
+    let list=activeCat==='all'?PRODUCTS:PRODUCTS.filter(p=>p.category===activeCat);
+    if(searchQuery){list=list.filter(p=>(p.name||'').toLowerCase().includes(searchQuery)||(p.description||'').toLowerCase().includes(searchQuery));}
 g.innerHTML=list.map(p=>`<div class=card>${renderImgHTML(p)}<div class=no-img>${p.image?`<img src="${p.image}" data-src="${p.image}">`:'🛍️'}</div><div class=body><h3>${p.name}</h3><p>${p.description||''}</p>${p.sizes?`<select id="size-${p.id}" class=opt-select><option value="">المقاس</option>${p.sizes.split(',').map(s=>`<option value="${s}">${s}</option>`).join('')}</select>`:''}${p.colors?`<select id="color-${p.id}" class=opt-select><option value="">اللون</option>${p.colors.split(',').map(c=>`<option value="${c}">${c}</option>`).join('')}</select>`:''}${p.deliveryTime?`<p class=delivery>🚚 التوصيل: ${p.deliveryTime}</p>`:''}<div class=row><span class=price>${p.price} دج</span><button class=add-btn onclick="add('${p.id}')">أضف للسلة</button></div></div></div>`).join('');
   }catch(e){console.error(e);}
 }
@@ -119,4 +121,15 @@ document.getElementById('btnRedot').addEventListener('click',()=>{
   submitOrder('redotpay',f);
 });
 load();
+
+
+function initSearch(){
+  const input=document.getElementById('searchInput');
+  if(!input) return;
+  input.addEventListener('input',()=>{
+    searchQuery=input.value.trim().toLowerCase();
+    load();
+  });
+}
+document.addEventListener('DOMContentLoaded',initSearch);
 
