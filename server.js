@@ -28,19 +28,23 @@ if (!fs.existsSync('data/settings.json')) writeDB('data/settings.json', { curren
 
 app.get('/api/products', (req, res) => res.json(readDB('data/products.json')));
 
-app.post('/api/products', upload.array('images', 5), (req, res) => {
+app.post('/api/products', upload.array('images', 5), async (req, res) => {
   const products = readDB('data/products.json');
   const p = { id: genId(), name: req.body.name, price: Number(req.body.price), category: req.body.category || '', stock: Number(req.body.stock) || 0, description: req.body.description || '', image: req.files && req.files[0] ? '/uploads/' + req.files[0].filename : '', images: req.files ? req.files.map(f=>'/uploads/'+f.filename) : [], sizes: req.body.sizes || '', colors: req.body.colors || '', deliveryTime: req.body.deliveryTime || '', hot: req.body.hot==='true'||req.body.hot==='on' };
+  p.nameEn = await translateText(p.name);
+  p.descriptionEn = p.description ? await translateText(p.description) : '';
   products.push(p);
   writeDB('data/products.json', products);
   res.json(p);
 });
 
-app.put('/api/products/:id', upload.array('images', 5), (req, res) => {
+app.put('/api/products/:id', upload.array('images', 5), async (req, res) => {
   const products = readDB('data/products.json');
   const i = products.findIndex(p => p.id === req.params.id);
   if (i === -1) return res.status(404).json({ error: 'غير موجود' });
   products[i] = { ...products[i], name: req.body.name || products[i].name, price: Number(req.body.price) || products[i].price, category: req.body.category || products[i].category, stock: Number(req.body.stock) ?? products[i].stock, description: req.body.description || products[i].description, image: req.files && req.files[0] ? '/uploads/' + req.files[0].filename : products[i].image, images: req.files && req.files.length ? req.files.map(f=>'/uploads/'+f.filename) : products[i].images, sizes: req.body.sizes !== undefined ? req.body.sizes : products[i].sizes, colors: req.body.colors !== undefined ? req.body.colors : products[i].colors, deliveryTime: req.body.deliveryTime !== undefined ? req.body.deliveryTime : products[i].deliveryTime, hot: req.body.hot!==undefined ? (req.body.hot==='true'||req.body.hot==='on') : products[i].hot };
+  products[i].nameEn = await translateText(products[i].name);
+  products[i].descriptionEn = products[i].description ? await translateText(products[i].description) : '';
   writeDB('data/products.json', products);
   res.json(products[i]);
 });
@@ -94,3 +98,12 @@ app.put('/api/settings', (req, res) => { writeDB('data/settings.json', req.body)
 
 app.listen(PORT, () => console.log('المتجر يعمل على http://localhost:' + PORT));
 
+
+async function translateText(text){
+  if(!text) return '';
+  try{
+    const r = await fetch('https://api.mymemory.translated.net/get?q='+encodeURIComponent(text)+'&langpair=ar|en');
+    const d = await r.json();
+    return d.responseData && d.responseData.translatedText ? d.responseData.translatedText : text;
+  }catch(e){ return text; }
+}

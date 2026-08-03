@@ -2,10 +2,13 @@
 let PRODUCTS=[], CART=[];
 let activeCat='all';
 let searchQuery='';
+let currentLang='ar';
 function renderCatTabs(){
   const cats=[...new Set(PRODUCTS.map(p=>p.category).filter(Boolean))];
   const tabs=document.getElementById('catTabs');
-  tabs.innerHTML='<button class="cat-tab active" data-cat="all">الكل</button><button class="cat-tab" data-cat="__hot__">🔥 عروض نارية</button>'+cats.map(c=>`<button class="cat-tab" data-cat="${c}">${c}</button>`).join('');
+  const allLabel=currentLang==='en'?'All':'الكل';
+  const hotLabel=currentLang==='en'?'🔥 Hot Deals':'🔥 عروض نارية';
+  tabs.innerHTML=`<button class="cat-tab active" data-cat="all">${allLabel}</button><button class="cat-tab" data-cat="__hot__">${hotLabel}</button>`+cats.map(c=>`<button class="cat-tab" data-cat="${c}">${c}</button>`).join('');
   tabs.querySelectorAll('.cat-tab').forEach(t=>t.addEventListener('click',()=>{
     tabs.querySelectorAll('.cat-tab').forEach(x=>x.classList.remove('active'));
     t.classList.add('active');
@@ -22,7 +25,7 @@ async function load(){
     if(PRODUCTS.length===0){g.innerHTML='<p style=color:#8a8d93;padding:20px>لا توجد منتجات بعد</p>';return;}
     let list=activeCat==='all'?PRODUCTS:(activeCat==='__hot__'?PRODUCTS.filter(p=>p.hot):PRODUCTS.filter(p=>p.category===activeCat));
     if(searchQuery){list=list.filter(p=>(p.name||'').toLowerCase().includes(searchQuery)||(p.description||'').toLowerCase().includes(searchQuery));}
-g.innerHTML=list.map(p=>`<div class=card>${renderImgHTML(p)}<div class=no-img>${p.image?`<img src="${p.image}" data-src="${p.image}">`:'🛍️'}</div><div class=body><h3>${p.name}</h3><p>${p.description||''}</p>${p.sizes?`<select id="size-${p.id}" class=opt-select><option value="">المقاس</option>${p.sizes.split(',').map(s=>`<option value="${s}">${s}</option>`).join('')}</select>`:''}${p.colors?`<select id="color-${p.id}" class=opt-select><option value="">اللون</option>${p.colors.split(',').map(c=>`<option value="${c}">${c}</option>`).join('')}</select>`:''}${p.deliveryTime?`<p class=delivery>🚚 التوصيل: ${p.deliveryTime}</p>`:''}<div class=row><span class=price>${p.price} دج</span><button class=add-btn onclick="add('${p.id}')">أضف للسلة</button></div></div></div>`).join('');
+g.innerHTML=list.map(p=>`<div class=card>${renderImgHTML(p)}<div class=no-img>${p.image?`<img src="${p.image}" data-src="${p.image}">`:'🛍️'}</div><div class=body><h3>${tr(p,'name')}</h3><p>${tr(p,'description')}</p>${p.sizes?`<select id="size-${p.id}" class=opt-select><option value="">المقاس</option>${p.sizes.split(',').map(s=>`<option value="${s}">${s}</option>`).join('')}</select>`:''}${p.colors?`<select id="color-${p.id}" class=opt-select><option value="">اللون</option>${p.colors.split(',').map(c=>`<option value="${c}">${c}</option>`).join('')}</select>`:''}${p.deliveryTime?`<p class=delivery>🚚 ${currentLang==='en'?'Delivery':'التوصيل'}: ${p.deliveryTime}</p>`:''}<div class=row><span class=price>${p.price} ${currentLang==='en'?'DZD':'دج'}</span><button class=add-btn onclick="add('${p.id}')">${currentLang==='en'?'Add to Cart':'أضف للسلة'}</button></div></div></div>`).join('');
   }catch(e){console.error(e);}
 }
 function add(id){
@@ -131,5 +134,22 @@ function initSearch(){
     load();
   });
 }
-document.addEventListener('DOMContentLoaded',initSearch);
+function tr(p,field){
+  if(currentLang==='en' && p[field+'En']) return p[field+'En'];
+  return p[field] || '';
+}
+function initLang(){
+  const btn=document.getElementById('langToggle');
+  if(!btn) return;
+  btn.addEventListener('click',()=>{
+    currentLang = currentLang==='ar' ? 'en' : 'ar';
+    btn.textContent = currentLang==='ar' ? 'EN' : 'AR';
+    document.body.dir = currentLang==='en' ? 'ltr' : 'rtl';
+    const si=document.getElementById('searchInput');
+    if(si) si.placeholder = currentLang==='en' ? '🔍 Search products...' : '🔍 ابحث عن منتج...';
+    renderCatTabs();
+    load();
+  });
+}
+document.addEventListener('DOMContentLoaded',()=>{initSearch();initLang();});
 
