@@ -153,3 +153,73 @@ function initLang(){
 }
 document.addEventListener('DOMContentLoaded',()=>{initSearch();initLang();});
 
+
+function authToken(){ return localStorage.getItem('authToken')||''; }
+
+function renderAuthUI(){
+  let bar = document.getElementById('authBar');
+  if(!bar){
+    bar = document.createElement('div');
+    bar.id = 'authBar';
+    bar.style.cssText = 'position:fixed;top:8px;left:8px;z-index:9999;background:#1a1a1a;border:1px solid #d4af37;border-radius:20px;padding:6px 14px;color:#fff;font-size:13px;cursor:pointer';
+    document.body.appendChild(bar);
+  }
+  const token = authToken();
+  const name = localStorage.getItem('authName')||'';
+  if(token){
+    bar.textContent = '👤 '+(name||'حسابي')+' | خروج';
+    bar.onclick = ()=>{ localStorage.removeItem('authToken'); localStorage.removeItem('authName'); renderAuthUI(); };
+  } else {
+    bar.textContent = '🔑 تسجيل الدخول';
+    bar.onclick = openAuthModal;
+  }
+}
+
+function openAuthModal(){
+  let modal = document.getElementById('authModal');
+  if(modal){ modal.style.display='flex'; return; }
+  modal = document.createElement('div');
+  modal.id = 'authModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:10000;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML = `
+    <div style="background:#1a1a1a;border:1px solid #d4af37;border-radius:12px;padding:20px;width:90%;max-width:340px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+        <button id="tabLogin" style="flex:1;padding:8px;background:#d4af37;color:#000;border:none;border-radius:6px;margin-inline-end:4px">دخول</button>
+        <button id="tabRegister" style="flex:1;padding:8px;background:#333;color:#fff;border:none;border-radius:6px">تسجيل</button>
+      </div>
+      <input id="authName" placeholder="الاسم" style="display:none;width:100%;margin-bottom:8px;padding:10px;border-radius:6px;border:1px solid #555;background:#000;color:#fff">
+      <input id="authEmail" placeholder="البريد الإلكتروني" style="width:100%;margin-bottom:8px;padding:10px;border-radius:6px;border:1px solid #555;background:#000;color:#fff">
+      <input id="authPass" type="password" placeholder="كلمة السر" style="width:100%;margin-bottom:8px;padding:10px;border-radius:6px;border:1px solid #555;background:#000;color:#fff">
+      <div id="authError" style="color:#ff6b6b;font-size:12px;margin-bottom:8px"></div>
+      <button id="authSubmit" style="width:100%;padding:10px;background:#d4af37;color:#000;border:none;border-radius:6px;font-weight:bold">دخول</button>
+      <div style="text-align:center;margin-top:10px"><span onclick="document.getElementById('authModal').style.display='none'" style="color:#999;cursor:pointer">إغلاق</span></div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  let mode = 'login';
+  const nameInput = modal.querySelector('#authName');
+  const submitBtn = modal.querySelector('#authSubmit');
+  const errBox = modal.querySelector('#authError');
+
+  modal.querySelector('#tabLogin').onclick = ()=>{ mode='login'; nameInput.style.display='none'; submitBtn.textContent='دخول'; errBox.textContent=''; };
+  modal.querySelector('#tabRegister').onclick = ()=>{ mode='register'; nameInput.style.display='block'; submitBtn.textContent='تسجيل'; errBox.textContent=''; };
+
+  submitBtn.onclick = async ()=>{
+    errBox.textContent='';
+    const email = modal.querySelector('#authEmail').value.trim();
+    const password = modal.querySelector('#authPass').value;
+    const name = nameInput.value.trim();
+    if(!email || !password){ errBox.textContent='عمر الحقول المطلوبة'; return; }
+    try{
+      const r = await fetch('/api/'+mode, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name,email,password}) });
+      const d = await r.json();
+      if(!r.ok){ errBox.textContent = d.error || 'خطأ'; return; }
+      localStorage.setItem('authToken', d.token);
+      localStorage.setItem('authName', d.name||'');
+      modal.style.display='none';
+      renderAuthUI();
+    }catch(e){ errBox.textContent='خطأ فـ الاتصال'; }
+  };
+}
+
+document.addEventListener('DOMContentLoaded', renderAuthUI);

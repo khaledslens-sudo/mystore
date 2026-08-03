@@ -2,12 +2,47 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const fs = require('fs');
+const bcrypt = require('bcryptjs');
 const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
+if (!fs.existsSync('data/users.json')) writeDB('data/users.json', []);
+
+function genToken(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
+
+app.post('/api/register', (req, res) => {
+  const { name, email, password } = req.body;
+  if(!email || !password) return res.status(400).json({error:'بيانات ناقصة'});
+  const users = readDB('data/users.json');
+  if(users.find(u=>u.email===email)) return res.status(400).json({error:'البريد مستعمل من قبل'});
+  const hash = bcrypt.hashSync(password, 10);
+  const token = genToken();
+  users.push({ id: genId(), name: name||'', email, password: hash, token });
+  writeDB('data/users.json', users);
+  res.json({ token, name: name||'', email });
+});
+
+app.post('/api/login', (req, res) => {
+  const { email, password } = req.body;
+  const users = readDB('data/users.json');
+  const u = users.find(x=>x.email===email);
+  if(!u || !bcrypt.compareSync(password, u.password)) return res.status(401).json({error:'بيانات الدخول خاطئة'});
+  u.token = genToken();
+  writeDB('data/users.json', users);
+  res.json({ token: u.token, name: u.name, email: u.email });
+});
+
+app.get('/api/me', (req, res) => {
+  const token = req.headers['x-auth-token'];
+  const users = readDB('data/users.json');
+  const u = users.find(x=>x.token===token);
+  if(!u) return res.status(401).json({error:'غير مسجل'});
+  res.json({ name: u.name, email: u.email });
+});
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
