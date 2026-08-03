@@ -9,6 +9,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
+app.use(express.json());
 if (!fs.existsSync('data/users.json')) writeDB('data/users.json', []);
 
 function genToken(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
@@ -43,7 +44,6 @@ app.get('/api/me', (req, res) => {
   res.json({ name: u.name, email: u.email });
 });
 
-app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 

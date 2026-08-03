@@ -161,7 +161,7 @@ function renderAuthUI(){
   if(!bar){
     bar = document.createElement('div');
     bar.id = 'authBar';
-    bar.style.cssText = 'position:fixed;top:8px;left:8px;z-index:9999;background:#1a1a1a;border:1px solid #d4af37;border-radius:20px;padding:6px 14px;color:#fff;font-size:13px;cursor:pointer';
+    bar.style.cssText = 'position:static;display:inline-block;margin:10px auto;background:#1a1a1a;border:1px solid #d4af37;border-radius:20px;padding:8px 16px;color:#fff;font-size:13px;cursor:pointer';
     document.body.appendChild(bar);
   }
   const token = authToken();
