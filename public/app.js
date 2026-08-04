@@ -75,7 +75,10 @@ function openLightbox(src){document.getElementById('lightboxImg').src=src;docume
 function closeLightbox(){document.getElementById('lightbox').style.display='none';}
 function renderImgHTML(p){
   if(p.images&&p.images.length>1){
-    return '<div class=gallery data-idx=0>'+p.images.map((im,gi)=>'<img src="'+im+'" data-src="'+im+'" style="display:'+(gi===0?'block':'none')+'">').join('')+'<button type=button class=gal-prev onclick="galNav(event,this,-1)">‹</button><button type=button class=gal-next onclick="galNav(event,this,1)">›</button></div>';
+    return '<div class=gallery data-idx=0>'+p.images.map((im,gi)=>'<img src="'+im+'" data-src="'+im+'" style="display:'+(gi===0?'block':'none')+'">').join('')+'<div class=gallery-counter>1/'+p.images.length+'</div><button type=button class=gal-prev onclick="galNav(event,this,-1)">‹</button><button type=button class=gal-next onclick="galNav(event,this,1)">›</button></div>';
+  }
+  if(p.image){
+    return '<div class=gallery><img src="'+p.image+'"></div>';
   }
   return '';
 }
@@ -88,6 +91,8 @@ function galNav(e,btn,d){
   idx=(idx+d+imgs.length)%imgs.length;
   imgs[idx].style.display='block';
   g.dataset.idx=idx;
+  const counter=g.querySelector('.gallery-counter');
+  if(counter) counter.textContent=(idx+1)+'/'+imgs.length;
 }
 function openDrawer(){document.getElementById('drawer').classList.add('open');document.getElementById('overlay').classList.add('open');}
 function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('overlay').classList.remove('open');}
