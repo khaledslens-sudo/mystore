@@ -64,15 +64,6 @@ function chqty(key,d){
   document.getElementById('cartCount').textContent=CART.reduce((s,i)=>s+i.qty,0);
   renderCart();
 }
-const lightboxEl=document.createElement('div');
-lightboxEl.id='lightbox';
-lightboxEl.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;align-items:center;justify-content:center';
-lightboxEl.innerHTML='<span onclick="closeLightbox()" style="position:absolute;top:16px;right:20px;color:#fff;font-size:2.2rem;cursor:pointer;z-index:10000;line-height:1">×</span><img id="lightboxImg" style="max-width:95%;max-height:90%;object-fit:contain">';
-lightboxEl.addEventListener('click',(ev)=>{if(ev.target.id==='lightbox')closeLightbox();});
-document.body.appendChild(lightboxEl);
-document.addEventListener('click',(ev)=>{const t=ev.target.closest('img[data-src]');if(t)openLightbox(t.dataset.src);});
-function openLightbox(src){document.getElementById('lightboxImg').src=src;document.getElementById('lightbox').style.display='flex';}
-function closeLightbox(){document.getElementById('lightbox').style.display='none';}
 function renderImgHTML(p){
   if(p.images&&p.images.length>1){
     return '<div class=gallery data-idx=0>'+p.images.map((im,gi)=>'<img src="'+im+'" data-src="'+im+'" style="display:'+(gi===0?'block':'none')+'">').join('')+'<div class=gallery-counter>1/'+p.images.length+'</div><button type=button class=gal-prev onclick="galNav(event,this,-1)">‹</button><button type=button class=gal-next onclick="galNav(event,this,1)">›</button></div>';
