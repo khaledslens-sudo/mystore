@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Zanova DZ</string>
+    <string name="title_activity_main">Zanova DZ</string>
+    <string name="package_name">com.zanova.dz</string>
+    <string name="custom_url_scheme">com.zanova.dz</string>
+</resources>

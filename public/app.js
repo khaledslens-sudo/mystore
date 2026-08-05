@@ -1,3 +1,4 @@
+const API_BASE=(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())?'https://zanova-dz.onrender.com':'';
 
 let PRODUCTS=[], CART=[];
 let activeCat='all';
@@ -18,7 +19,7 @@ function renderCatTabs(){
 }
 async function load(){
   try{
-    const r=await fetch('/api/products');
+    const r=await fetch(API_BASE+'/api/products');
     PRODUCTS=await r.json();
     renderCatTabs();
     const g=document.getElementById('grid');
@@ -116,7 +117,7 @@ async function submitOrder(method,receipt){
   fd.append('paymentMethod',method);
   fd.append('customer',JSON.stringify({name,phone,wilaya,address:addr}));
   if(receipt)fd.append('receipt',receipt);
-  const r=await fetch('/api/orders',{method:'POST',body:fd});
+  const r=await fetch(API_BASE+'/api/orders',{method:'POST',body:fd});
   if(r.ok){CART=[];renderCart();closeDrawer();alert('تم تسجيل طلبك بنجاح!');}
   else alert('حدث خطأ، حاول مرة أخرى');
 }
@@ -216,7 +217,7 @@ function openAuthModal(){
     const name = nameInput.value.trim();
     if(!email || !password){ errBox.textContent='عمر الحقول المطلوبة'; return; }
     try{
-      const r = await fetch('/api/'+mode, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name,email,password}) });
+      const r = await fetch(API_BASE+'/api/'+mode, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name,email,password}) });
       const d = await r.json();
       if(!r.ok){ errBox.textContent = d.error || 'خطأ'; return; }
       localStorage.setItem('authToken', d.token);
