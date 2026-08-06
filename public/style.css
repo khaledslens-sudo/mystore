@@ -75,11 +75,11 @@ body{font-family:'Tajawal',Arial,sans-serif;background:#0a0a0a;color:#f0f0f0;dir
 .card-info .price{font-size:.85rem;font-weight:700;color:#d4af37}
 .product-modal{position:fixed;inset:0;background:#1a1a2e;z-index:9999;display:none;overflow-y:auto}
 .product-modal.open{display:flex}
-.product-modal-inner{background:#1a1a2e;width:100%;max-width:600px;margin:0 auto;min-height:100vh;position:relative;padding-bottom:24px}
+.product-modal-inner{background:#1a1a2e;width:100%;max-width:600px;margin:0 auto;position:relative;padding-bottom:24px}
 .pm-close{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.5);color:#fff;border:none;border-radius:50%;width:32px;height:32px;font-size:1rem;z-index:2}
 
 .gallery{position:relative;width:100%;background:#000}
-.gallery img{width:100%;height:auto;max-height:50vh;object-fit:contain;display:block;margin:auto;background:#000}
+.gallery img{width:100%;height:auto;max-height:75vh;object-fit:contain;display:block;margin:auto;background:#000}
 .gallery-counter{position:absolute;bottom:12px;right:12px;background:rgba(0,0,0,.6);color:#fff;padding:4px 12px;border-radius:14px;font-size:.8rem}
 .gal-prev,.gal-next{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.5);color:#fff;border:none;width:34px;height:34px;border-radius:50%;font-size:1.2rem}
 .gal-prev{left:8px}
