@@ -1,35 +1,51 @@
-with open('public/app.js','r',encoding='utf-8') as f:
-    lines = f.readlines()
+with open('server.js', 'r', encoding='utf-8') as f:
+    content = f.read()
 
-# تأكيد أن السطر 76 هو بداية renderImgHTML
-assert 'function renderImgHTML(p){' in lines[75], "OFFSET_MISMATCH: " + lines[75]
-
-new_block = '''function renderImgHTML(p){
-  if(p.images&&p.images.length>1){
-    return '<div class=gallery data-idx=0>'+p.images.map((im,gi)=>'<img src="'+im+'" data-src="'+im+'" style="display:'+(gi===0?'block':'none')+'">').join('')+'<div class=gallery-counter>1/'+p.images.length+'</div><button type=button class=gal-prev onclick="galNav(event,this,-1)">\u2039</button><button type=button class=gal-next onclick="galNav(event,this,1)">\u203a</button></div>';
+old_write = """function writeDB(f, d) {
+  const key = f.replace('data/', '');
+  cache[key] = d;
+  fs.writeFileSync(f, JSON.stringify(d, null, 2));
+  if (mongoDb) {
+    mongoDb.collection('store').updateOne({ _id: key }, { $set: { data: d } }, { upsert: true })
+      .catch(e => console.error('MongoDB write error:', e.message));
   }
-  if(p.image){
-    return '<div class=gallery><img src="'+p.image+'"></div>';
+}"""
+
+new_write = """let pendingWrites = 0;
+function writeDB(f, d) {
+  const key = f.replace('data/', '');
+  cache[key] = d;
+  fs.writeFileSync(f, JSON.stringify(d, null, 2));
+  if (mongoDb) {
+    pendingWrites++;
+    mongoDb.collection('store').updateOne({ _id: key }, { $set: { data: d } }, { upsert: true })
+      .catch(e => console.error('MongoDB write error:', e.message))
+      .finally(() => { pendingWrites--; });
   }
-  return '';
 }
-function galNav(e,btn,d){
-  e.stopPropagation();
-  const g=btn.parentElement;
-  const imgs=[...g.querySelectorAll('img')];
-  let idx=Number(g.dataset.idx);
-  imgs[idx].style.display='none';
-  idx=(idx+d+imgs.length)%imgs.length;
-  imgs[idx].style.display='block';
-  g.dataset.idx=idx;
-  const counter=g.querySelector('.gallery-counter');
-  if(counter) counter.textContent=(idx+1)+'/'+imgs.length;
+
+async function waitForPendingWrites() {
+  let waited = 0;
+  while (pendingWrites > 0 && waited < 8000) {
+    await new Promise(r => setTimeout(r, 100));
+    waited += 100;
+  }
 }
-'''
 
-# نبدل من السطر 76 (index 75) لغاية السطر 91 (index 90) شامل
-lines[75:91] = [new_block]
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, waiting for pending writes: ' + pendingWrites);
+  await waitForPendingWrites();
+  console.log('Shutdown complete');
+  process.exit(0);
+});"""
 
-with open('public/app.js','w',encoding='utf-8') as f:
-    f.writelines(lines)
-print("APP_JS_OK")
+if old_write not in content:
+    print("ERROR: writeDB function not found - no changes made")
+    exit(1)
+
+content = content.replace(old_write, new_write)
+
+with open('server.js', 'w', encoding='utf-8') as f:
+    f.write(content)
+
+print("SUCCESS: server.js updated with graceful shutdown")

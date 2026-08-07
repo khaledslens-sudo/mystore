@@ -1,20 +1,75 @@
-with open('public/app.js','r',encoding='utf-8') as f:
-    lines = f.readlines()
+with open('server.js', 'r', encoding='utf-8') as f:
+    content = f.read()
 
-new_line = '''g.innerHTML=list.map(p=>`<div class=card onclick="openProduct('${p.id}')">${p.image?`<img class=card-img src="${p.image}" loading=lazy>`:'<div class=card-img-placeholder>🛍️</div>'}<div class=card-info><h3>${tr(p,'name')}</h3><span class=price>${p.price} ${currentLang==='en'?'DZD':'دج'}</span></div></div>`).join('');
+import re
 
-window.openProduct=function(id){
-  const p=PRODUCTS.find(x=>x.id===id); if(!p) return;
-  let m=document.getElementById('productModal');
-  if(!m){ m=document.createElement('div'); m.id='productModal'; m.className='product-modal'; m.onclick=e=>{if(e.target===m)closeProduct()}; document.body.appendChild(m); }
-  m.innerHTML=`<div class=product-modal-inner><button class=pm-close onclick="closeProduct()">✕</button>${renderImgHTML(p)}<div class=body><h3>${tr(p,'name')}</h3><p>${tr(p,'description')}</p>${p.sizes?`<select id="size-${p.id}" class=opt-select><option value="">${currentLang==='en'?'Size':'مقاس'}</option>${p.sizes.split(',').map(s=>`<option value="${s}">${s}</option>`).join('')}</select>`:''}${p.colors?`<select id="color-${p.id}" class=opt-select><option value="">${currentLang==='en'?'Color':'لون'}</option>${p.colors.split(',').map(c=>`<option value="${c}">${c}</option>`).join('')}</select>`:''}${p.deliveryTime?`<p class=delivery>🚚 ${currentLang==='en'?'Delivery':'التوصيل'}: ${p.deliveryTime}</p>`:''}<div class=row><span class=price>${p.price} ${currentLang==='en'?'DZD':'دج'}</span><button class=add-btn onclick="add('${p.id}')">${currentLang==='en'?'Add to Cart':'أضف للسلة'}</button></div></div></div>`;
-  m.classList.add('open');
-};
-window.closeProduct=function(){ const m=document.getElementById('productModal'); if(m) m.classList.remove('open'); };
-'''
+# استبدال الدوال
+old_functions = """function readDB(f) { return JSON.parse(fs.readFileSync(f, 'utf8')); }
+function writeDB(f, d) { fs.writeFileSync(f, JSON.stringify(d, null, 2)); }
+function genId() { return Math.random().toString(36).slice(2, 9); }"""
 
-lines[27] = new_line  # line 28 (0-indexed 27)
+new_functions = """const { MongoClient } = require('mongodb');
+const MONGO_URI = process.env.MONGODB_URI || '';
+let mongoClient, mongoDb;
+const cache = {};
 
-with open('public/app.js','w',encoding='utf-8') as f:
-    f.writelines(lines)
-print("APP_JS_OK")
+async function connectDB() {
+  if (!MONGO_URI) { console.log('MONGODB_URI missing - using local files only'); return; }
+  mongoClient = new MongoClient(MONGO_URI);
+  await mongoClient.connect();
+  mongoDb = mongoClient.db('zanova');
+  console.log('MongoDB connected');
+}
+
+async function loadCache(files) {
+  for (const f of files) {
+    if (mongoDb) {
+      const doc = await mongoDb.collection('store').findOne({ _id: f });
+      if (doc) { cache[f] = doc.data; continue; }
+    }
+    cache[f] = fs.existsSync('data/' + f) ? JSON.parse(fs.readFileSync('data/' + f, 'utf8')) : [];
+  }
+}
+
+function readDB(f) {
+  const key = f.replace('data/', '');
+  return cache[key] || [];
+}
+
+function writeDB(f, d) {
+  const key = f.replace('data/', '');
+  cache[key] = d;
+  fs.writeFileSync(f, JSON.stringify(d, null, 2));
+  if (mongoDb) {
+    mongoDb.collection('store').updateOne({ _id: key }, { $set: { data: d } }, { upsert: true })
+      .catch(e => console.error('MongoDB write error:', e.message));
+  }
+}
+
+function genId() { return Math.random().toString(36).slice(2, 9); }"""
+
+if old_functions not in content:
+    print("ERROR: functions not found - no changes made")
+    exit(1)
+
+content = content.replace(old_functions, new_functions)
+
+# استبدال app.listen (سطر واحد بسيط)
+listen_pattern = re.compile(r"app\.listen\(PORT,.*?\);\n")
+match = listen_pattern.search(content)
+if not match:
+    print("ERROR: app.listen not found - no changes made")
+    exit(1)
+
+old_listen = match.group(0)
+new_listen = """connectDB().then(() => loadCache(['products.json', 'orders.json', 'users.json', 'settings.json'])).then(() => {
+  app.listen(PORT, () => console.log('Server running on http://localhost:' + PORT));
+});
+"""
+
+content = content.replace(old_listen, new_listen)
+
+with open('server.js', 'w', encoding='utf-8') as f:
+    f.write(content)
+
+print("SUCCESS: server.js updated")

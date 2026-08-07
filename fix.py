@@ -1,36 +1,71 @@
-with open('public/app.js','r',encoding='utf-8') as f: c=f.read()
+with open('server.js', 'r', encoding='utf-8') as f:
+    content = f.read()
 
-old = '''g.innerHTML=list.map(p=>`<div class=card>${renderImgHTML(p)}<div class=no-img>${p.image?`<img src="${p.image}" data-src="${p.image}">`:'🛍️'}</div><div class=body><h3>${tr(p,'name')}</h3><p>${tr(p,'description')}</p>${p.sizes?`<select id="size-${p.id}" class=opt-select><option value="">مقاس</option>${p.sizes.split(',').map(s=>`<option value="${s}">${s}</option>`).join('')}</select>`:''}${p.colors?`<select id="color-${p.id}" class=opt-select><option value="">لون</option>${p.colors.split(',').map(c=>`<option value="${c}">${c}</option>`).join('')}</select>`:''}${p.deliveryTime?`<p class=delivery>🚚 ${currentLang==='en'?'Delivery':'التوصيل'}: ${p.deliveryTime}</p>`:''}<div class=row><span class=price>${p.price} ${currentLang==='en'?'DZD':'دج'}</span><button class=add-btn onclick="add('${p.id}')">${currentLang==='en'?'Add to Cart':'أضف للسلة'}</button></div></div></div>`).join('');'''
+old_functions = """function readDB(f) { return JSON.parse(fs.readFileSync(f, 'utf8')); }
+function writeDB(f, d) { fs.writeFileSync(f, JSON.stringify(d, null, 2)); }
+function genId() { return Math.random().toString(36).slice(2, 9); }"""
 
-new = '''g.innerHTML=list.map(p=>`<div class=card onclick="openProduct('${p.id}')">${p.image?`<img class=card-img src="${p.image}" loading=lazy>`:'<div class=card-img-placeholder>🛍️</div>'}<div class=card-info><h3>${tr(p,'name')}</h3><span class=price>${p.price} ${currentLang==='en'?'DZD':'دج'}</span></div></div>`).join('');
+new_functions = """const { MongoClient } = require('mongodb');
+const MONGO_URI = process.env.MONGODB_URI || '';
+let mongoClient, mongoDb;
+const cache = {};
 
-window.openProduct=function(id){
-  const p=PRODUCTS.find(x=>x.id===id); if(!p) return;
-  let m=document.getElementById('productModal');
-  if(!m){ m=document.createElement('div'); m.id='productModal'; m.className='product-modal'; m.onclick=e=>{if(e.target===m)closeProduct()}; document.body.appendChild(m); }
-  m.innerHTML=`<div class=product-modal-inner><button class=pm-close onclick="closeProduct()">✕</button>${renderImgHTML(p)}<div class=body><h3>${tr(p,'name')}</h3><p>${tr(p,'description')}</p>${p.sizes?`<select id="size-${p.id}" class=opt-select><option value="">${currentLang==='en'?'Size':'مقاس'}</option>${p.sizes.split(',').map(s=>`<option value="${s}">${s}</option>`).join('')}</select>`:''}${p.colors?`<select id="color-${p.id}" class=opt-select><option value="">${currentLang==='en'?'Color':'لون'}</option>${p.colors.split(',').map(c=>`<option value="${c}">${c}</option>`).join('')}</select>`:''}${p.deliveryTime?`<p class=delivery>🚚 ${currentLang==='en'?'Delivery':'التوصيل'}: ${p.deliveryTime}</p>`:''}<div class=row><span class=price>${p.price} ${currentLang==='en'?'DZD':'دج'}</span><button class=add-btn onclick="add('${p.id}')">${currentLang==='en'?'Add to Cart':'أضف للسلة'}</button></div></div></div>`;
-  m.classList.add('open');
-};
-window.closeProduct=function(){ const m=document.getElementById('productModal'); if(m) m.classList.remove('open'); };'''
+async function connectDB() {
+  if (!MONGO_URI) { console.log('MONGODB_URI missing - using local files only'); return; }
+  mongoClient = new MongoClient(MONGO_URI);
+  await mongoClient.connect();
+  mongoDb = mongoClient.db('zanova');
+  console.log('MongoDB connected');
+}
 
-if old not in c:
-    print("NOT_FOUND")
-else:
-    c=c.replace(old,new)
-    with open('public/app.js','w',encoding='utf-8') as f: f.write(c)
-    print("APP_JS_OK")
+async function loadCache(files) {
+  for (const f of files) {
+    if (mongoDb) {
+      const doc = await mongoDb.collection('store').findOne({ _id: f });
+      if (doc) { cache[f] = doc.data; continue; }
+    }
+    cache[f] = fs.existsSync('data/' + f) ? JSON.parse(fs.readFileSync('data/' + f, 'utf8')) : [];
+  }
+}
 
-css='''
-.grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;padding:10px}
-.card{cursor:pointer;padding:0}
-.card-img,.card-img-placeholder{width:100%;height:130px;object-fit:cover;display:flex;align-items:center;justify-content:center;font-size:2rem;background:#16213e}
-.card-info{padding:8px}
-.card-info h3{font-size:.8rem;margin:0 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.card-info .price{font-size:.85rem;font-weight:700;color:#d4af37}
-.product-modal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:none;align-items:flex-end;justify-content:center}
-.product-modal.open{display:flex}
-.product-modal-inner{background:#1a1a2e;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;border-radius:16px 16px 0 0;position:relative;padding-bottom:16px}
-.pm-close{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.5);color:#fff;border:none;border-radius:50%;width:32px;height:32px;font-size:1rem;z-index:2}
-'''
-with open('public/style.css','a',encoding='utf-8') as f: f.write(css)
-print("CSS_OK")
+function readDB(f) {
+  const key = f.replace('data/', '');
+  return cache[key] || [];
+}
+
+function writeDB(f, d) {
+  const key = f.replace('data/', '');
+  cache[key] = d;
+  fs.writeFileSync(f, JSON.stringify(d, null, 2));
+  if (mongoDb) {
+    mongoDb.collection('store').updateOne({ _id: key }, { $set: { data: d } }, { upsert: true })
+      .catch(e => console.error('MongoDB write error:', e.message));
+  }
+}
+
+function genId() { return Math.random().toString(36).slice(2, 9); }"""
+
+if old_functions not in content:
+    print("ERROR: functions not found - no changes made")
+    exit(1)
+
+content = content.replace(old_functions, new_functions)
+
+import re
+listen_pattern = re.compile(r"app\.listen\(PORT,.*?\}\)\);", re.DOTALL)
+match = listen_pattern.search(content)
+if not match:
+    print("ERROR: app.listen not found - no changes made")
+    exit(1)
+
+old_listen = match.group(0)
+new_listen = """connectDB().then(() => loadCache(['products.json', 'orders.json', 'users.json', 'settings.json'])).then(() => {
+  app.listen(PORT, () => console.log('Server running on http://localhost:' + PORT));
+});"""
+
+content = content.replace(old_listen, new_listen)
+
+with open('server.js', 'w', encoding='utf-8') as f:
+    f.write(content)
+
+print("SUCCESS: server.js updated")

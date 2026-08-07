@@ -53,8 +53,62 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-function readDB(f) { return JSON.parse(fs.readFileSync(f, 'utf8')); }
-function writeDB(f, d) { fs.writeFileSync(f, JSON.stringify(d, null, 2)); }
+const { MongoClient } = require('mongodb');
+const MONGO_URI = process.env.MONGODB_URI || '';
+let mongoClient, mongoDb;
+const cache = {};
+
+async function connectDB() {
+  if (!MONGO_URI) { console.log('MONGODB_URI missing - using local files only'); return; }
+  mongoClient = new MongoClient(MONGO_URI);
+  await mongoClient.connect();
+  mongoDb = mongoClient.db('zanova');
+  console.log('MongoDB connected');
+}
+
+async function loadCache(files) {
+  for (const f of files) {
+    if (mongoDb) {
+      const doc = await mongoDb.collection('store').findOne({ _id: f });
+      if (doc) { cache[f] = doc.data; continue; }
+    }
+    cache[f] = fs.existsSync('data/' + f) ? JSON.parse(fs.readFileSync('data/' + f, 'utf8')) : [];
+  }
+}
+
+function readDB(f) {
+  const key = f.replace('data/', '');
+  return cache[key] || [];
+}
+
+let pendingWrites = 0;
+function writeDB(f, d) {
+  const key = f.replace('data/', '');
+  cache[key] = d;
+  fs.writeFileSync(f, JSON.stringify(d, null, 2));
+  if (mongoDb) {
+    pendingWrites++;
+    mongoDb.collection('store').updateOne({ _id: key }, { $set: { data: d } }, { upsert: true })
+      .catch(e => console.error('MongoDB write error:', e.message))
+      .finally(() => { pendingWrites--; });
+  }
+}
+
+async function waitForPendingWrites() {
+  let waited = 0;
+  while (pendingWrites > 0 && waited < 8000) {
+    await new Promise(r => setTimeout(r, 100));
+    waited += 100;
+  }
+}
+
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, waiting for pending writes: ' + pendingWrites);
+  await waitForPendingWrites();
+  console.log('Shutdown complete');
+  process.exit(0);
+});
+
 function genId() { return Math.random().toString(36).slice(2, 9); }
 
 if (!fs.existsSync('data/products.json')) writeDB('data/products.json', []);
@@ -131,7 +185,9 @@ app.put('/api/orders/:id', (req, res) => {
 app.get('/api/settings', (req, res) => res.json(readDB('data/settings.json')));
 app.put('/api/settings', (req, res) => { writeDB('data/settings.json', req.body); res.json(req.body); });
 
-app.listen(PORT, () => console.log('المتجر يعمل على http://localhost:' + PORT));
+connectDB().then(() => loadCache(['products.json', 'orders.json', 'users.json', 'settings.json'])).then(() => {
+  app.listen(PORT, () => console.log('Server running on http://localhost:' + PORT));
+});
 
 
 async function translateText(text){
