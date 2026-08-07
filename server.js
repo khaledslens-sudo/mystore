@@ -4,6 +4,11 @@ const multer = require('multer');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const path = require('path');
+const { MongoClient } = require('mongodb');
+const MONGO_URI = process.env.MONGODB_URI || '';
+let mongoClient, mongoDb;
+const cache = {};
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -52,11 +57,6 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
 });
 const upload = multer({ storage });
-
-const { MongoClient } = require('mongodb');
-const MONGO_URI = process.env.MONGODB_URI || '';
-let mongoClient, mongoDb;
-const cache = {};
 
 async function connectDB() {
   if (!MONGO_URI) { console.log('MONGODB_URI missing - using local files only'); return; }
